@@ -1,0 +1,247 @@
+---
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+
+// Format current time
+const now = new Date();
+const timeString = now.toLocaleTimeString('de-DE', {
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit'
+});
+
+// Get user from cookies
+const token = Astro.cookies.get('token')?.value;
+let user = null;
+
+if (token) {
+  try {
+    const response = await fetch(`${Astro.url.origin}/api/auth/me`, {
+      headers: {
+        Cookie: `token=${token}`
+      },
+      credentials: 'include'
+    });
+    if (response.ok) {
+      user = await response.json();
+      console.log('User loaded:', user);
+    } else {
+      console.log('Failed to load user:', await response.text());
+    }
+  } catch (error) {
+    console.error('Error fetching user:', error);
+  }
+}
+---
+
+<!DOCTYPE html>
+<html lang="en" class="bg-[#1e1e2e] text-[#cdd6f4]">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="A modern blog about coding and technology" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+
+  <body class="min-h-screen bg-[#1e1e2e] font-mono">
+    <nav class="bg-[#181825] border-b border-[#313244] py-4 fixed w-full top-0 z-50">
+      <div class="max-w-[95%] mx-auto">
+        <div class="grid grid-cols-3 items-center">
+          <!-- Left: Blog Title -->
+          <div class="flex-shrink-0 ml-4">
+            <a href="/" class="text-xl font-bold">
+              <span class="text-[#89b4fa]">{</span>
+              <span class="text-[#a6e3a1]">Mainsys Blog</span>
+              <span class="text-[#89b4fa]">}</span>
+            </a>
+          </div>
+
+          <!-- Center: Current Time -->
+          <div class="flex justify-center">
+            <div class="flex items-center text-sm bg-[#11111b] px-4 py-2 rounded-lg border border-[#313244]">
+              <span id="current-time" class="text-[#a6e3a1]">"{timeString}"</span>
+            </div>
+          </div>
+
+          <!-- Right: User Controls -->
+          <div class="flex items-center justify-end mr-4">
+            {user ? (
+              <div class="flex items-center gap-6">
+                <div class="flex items-center text-sm">
+                  <span class="text-[#cba6f7]">const</span>
+                  <span class="text-[#89b4fa] ml-2">user</span>
+                  <span class="text-[#6c7086] mx-2">=</span>
+                  <span class="text-[#a6e3a1]">"{user.name}"</span>
+                  <span class="text-[#6c7086]">;</span>
+                </div>
+                {user.role === 'ADMIN' && (
+                  <a href="/admin" class="text-[#6c7086] hover:text-[#89b4fa] transition-colors duration-200">
+                    <span class="text-[#cba6f7]">function</span>
+                    <span class="text-[#89b4fa]">admin</span>
+                    <span class="text-[#6c7086]">()</span>
+                  </a>
+                )}
+                <button
+                  class="text-[#6c7086] hover:text-[#89b4fa] transition-colors duration-200"
+                  onclick="handleLogout()"
+                >
+                  <span class="text-[#cba6f7]">async</span>
+                  <span class="text-[#89b4fa]">logout</span>
+                  <span class="text-[#6c7086]">()</span>
+                </button>
+              </div>
+            ) : (
+              <div class="flex items-center gap-6">
+                <a href="/login" class="text-[#6c7086] hover:text-[#89b4fa] transition-colors duration-200">
+                  <span class="text-[#cba6f7]">async</span>
+                  <span class="text-[#89b4fa]">login</span>
+                  <span class="text-[#6c7086]">()</span>
+                </a>
+                <a href="/register" class="text-[#6c7086] hover:text-[#89b4fa] transition-colors duration-200">
+                  <span class="text-[#cba6f7]">async</span>
+                  <span class="text-[#89b4fa]">register</span>
+                  <span class="text-[#6c7086]">()</span>
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="pt-20">
+      <slot />
+    </main>
+
+    <footer class="bg-[#181825] border-t border-[#313244] py-8 mt-12">
+      <div class="max-w-[95%] mx-auto">
+        <div class="flex justify-between items-center">
+          <!-- Left: Year -->
+          <div class="ml-4">
+            <div class="text-[#6c7086] font-mono">
+              <span class="text-[#cba6f7]">const</span>
+              <span class="text-[#89b4fa] ml-2">year</span>
+              <span class="text-[#6c7086] mx-2">=</span>
+              <span class="text-[#a6e3a1]">"{new Date().getFullYear()}"</span>
+              <span class="text-[#6c7086]">;</span>
+            </div>
+          </div>
+
+          <!-- Right: Social Links -->
+          <div class="mr-4">
+            <a href="https://github.com/mainsys-git" target="_blank" rel="noopener noreferrer" class="text-[#6c7086] hover:text-[#89b4fa] transition-colors duration-200">
+              <span class="text-[#cba6f7]">import</span>
+              <span class="text-[#89b4fa]">GitHub</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // Update time every second
+      function updateTime() {
+        const timeElement = document.getElementById('current-time');
+        if (timeElement) {
+          const now = new Date();
+          const timeString = now.toLocaleTimeString('de-DE', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          });
+          timeElement.textContent = `"${timeString}"`;
+        }
+      }
+
+      setInterval(updateTime, 1000);
+    </script>
+
+    <script is:inline>
+      // Make logout function globally available
+      async function handleLogout() {
+        try {
+          const response = await fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            window.location.href = '/';
+          } else {
+            console.error('Logout failed:', await response.text());
+          }
+        } catch (error) {
+          console.error('Error during logout:', error);
+        }
+      }
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: 'JetBrains Mono', monospace;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  input, textarea {
+    color-scheme: dark;
+    caret-color: #a6e3a1;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #181825;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #313244;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #45475a;
+  }
+
+  /* Remove focus outlines and cursors */
+  * {
+    caret-color: transparent !important;
+    outline: none !important;
+  }
+
+  *:focus {
+    outline: none !important;
+  }
+
+  .select-none {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+</style>

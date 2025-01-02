@@ -1,0 +1,204 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { requireAdmin } from '../../middleware/auth';
+import { PrismaClient } from '@prisma/client';
+
+const user = await requireAdmin(Astro);
+const prisma = new PrismaClient();
+
+let posts = [];
+try {
+  posts = await prisma.post.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: {
+      author: {
+        select: {
+          name: true
+        }
+      }
+    }
+  });
+} finally {
+  await prisma.$disconnect();
+}
+---
+
+<Layout title="Admin Dashboard">
+  <div class="min-h-screen bg-[#1e1e2e] py-12">
+    <div class="max-w-[95%] mx-auto">
+      <div class="mb-16">
+        <div class="flex items-center justify-between mb-8">
+          <h1 class="text-3xl font-bold">
+            <span class="text-[#cba6f7]">class</span>
+            <span class="text-[#89b4fa]">AdminDashboard</span>
+            <span class="text-[#6c7086]">{</span>
+          </h1>
+          <a
+            href="/admin/posts/new"
+            class="bg-[#89b4fa] text-[#1e1e2e] px-6 py-2 rounded-lg hover:bg-[#b4befe] transition-colors duration-200 font-mono"
+          >
+            + New Post
+          </a>
+        </div>
+
+        <!-- Admin Info Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+          <div class="bg-[#181825] p-6 rounded-lg border border-[#313244]">
+            <h2 class="text-xl font-mono mb-4">
+              <span class="text-[#cba6f7]">get</span>
+              <span class="text-[#89b4fa]">UserInfo</span>
+              <span class="text-[#6c7086]">()</span>
+            </h2>
+            <div class="font-mono space-y-2">
+              <p>
+                <span class="text-[#6c7086]">name:</span>
+                <span class="text-[#a6e3a1]">"{user.name}"</span>
+              </p>
+              <p>
+                <span class="text-[#6c7086]">role:</span>
+                <span class="text-[#f9e2af]">"{user.role}"</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="bg-[#181825] p-6 rounded-lg border border-[#313244]">
+            <h2 class="text-xl font-mono mb-4">
+              <span class="text-[#cba6f7]">get</span>
+              <span class="text-[#89b4fa]">Stats</span>
+              <span class="text-[#6c7086]">()</span>
+            </h2>
+            <div class="font-mono space-y-2">
+              <p>
+                <span class="text-[#6c7086]">totalPosts:</span>
+                <span class="text-[#a6e3a1]">{posts.length}</span>
+              </p>
+              <p>
+                <span class="text-[#6c7086]">publishedPosts:</span>
+                <span class="text-[#a6e3a1]">{posts.filter(p => p.published).length}</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="bg-[#181825] p-6 rounded-lg border border-[#313244]">
+            <h2 class="text-xl font-mono mb-4">
+              <span class="text-[#cba6f7]">get</span>
+              <span class="text-[#89b4fa]">Actions</span>
+              <span class="text-[#6c7086]">()</span>
+            </h2>
+            <div class="space-y-4">
+              <a href="/admin/posts" class="block text-[#89b4fa] hover:text-[#b4befe] transition-colors duration-200">
+                <span class="text-[#cba6f7]">→</span> Manage Posts
+              </a>
+              <a href="/admin/users" class="block text-[#89b4fa] hover:text-[#b4befe] transition-colors duration-200">
+                <span class="text-[#cba6f7]">→</span> Manage Users
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Posts Section -->
+        <div class="bg-[#181825] rounded-lg border border-[#313244] overflow-hidden">
+          <div class="p-6">
+            <h2 class="text-xl font-mono mb-6">
+              <span class="text-[#cba6f7]">get</span>
+              <span class="text-[#89b4fa]">RecentPosts</span>
+              <span class="text-[#6c7086]">()</span>
+            </h2>
+            
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b border-[#313244] text-left">
+                    <th class="pb-4 text-[#6c7086] font-mono">Title</th>
+                    <th class="pb-4 text-[#6c7086] font-mono">Author</th>
+                    <th class="pb-4 text-[#6c7086] font-mono">Status</th>
+                    <th class="pb-4 text-[#6c7086] font-mono">Date</th>
+                    <th class="pb-4 text-[#6c7086] font-mono">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {posts.map((post) => (
+                    <tr class="border-b border-[#313244] last:border-0">
+                      <td class="py-4">
+                        <a href={`/posts/${post.id}`} class="text-[#89b4fa] hover:text-[#b4befe] transition-colors duration-200">
+                          {post.title}
+                        </a>
+                      </td>
+                      <td class="py-4 text-[#a6e3a1]">{post.author?.name || "Anonymous"}</td>
+                      <td class="py-4">
+                        <span class={`px-2 py-1 rounded-md text-sm ${post.published ? 'bg-[#a6e3a1]/20 text-[#a6e3a1]' : 'bg-[#f38ba8]/20 text-[#f38ba8]'}`}>
+                          {post.published ? 'Published' : 'Draft'}
+                        </span>
+                      </td>
+                      <td class="py-4 text-[#6c7086]">{new Date(post.createdAt).toLocaleDateString()}</td>
+                      <td class="py-4">
+                        <div class="flex items-center space-x-4">
+                          <a href={`/admin/posts/edit/${post.id}/`} class="text-[#89b4fa] hover:text-[#b4befe] transition-colors duration-200">
+                            Edit
+                          </a>
+                          <button
+                            data-post-id={post.id}
+                            class="text-[#f38ba8] hover:text-[#f38ba8] transition-colors duration-200"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  /* Add custom scrollbar styles */
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background: #181825;
+    border-radius: 4px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: #313244;
+    border-radius: 4px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: #45475a;
+  }
+</style>
+
+<script>
+  // Handle post deletion
+  document.querySelectorAll('button[data-post-id]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const postId = button.getAttribute('data-post-id');
+      if (!confirm('Are you sure you want to delete this post?')) return;
+      
+      try {
+        const response = await fetch(`/api/posts/${postId}`, {
+          method: 'DELETE',
+        });
+        
+        if (response.ok) {
+          // Reload the page to reflect changes
+          window.location.reload();
+        } else {
+          alert('Failed to delete post');
+        }
+      } catch (error) {
+        console.error('Error deleting post:', error);
+        alert('Failed to delete post');
+      }
+    });
+  });
+</script>

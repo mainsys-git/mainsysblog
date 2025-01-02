@@ -1,0 +1,110 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Login">
+  <div class="min-h-screen bg-[#1e1e2e] py-12">
+    <div class="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="bg-[#181825] rounded-lg overflow-hidden border border-[#313244] p-8 shadow-lg">
+        <div class="font-mono mb-8">
+          <div class="text-[#6c7086]">// Authentication required</div>
+          <div class="text-lg">
+            <span class="text-[#cba6f7]">async function</span>
+            <span class="text-[#89b4fa]">login</span>
+            <span class="text-[#6c7086]">(</span>
+            <span class="text-[#f5c2e7]">credentials</span>
+            <span class="text-[#6c7086]">)</span>
+            <span class="text-[#6c7086]"> {</span>
+          </div>
+        </div>
+
+        <form action="/api/auth/login" method="POST" class="space-y-6 pl-4">
+          <div>
+            <div class="flex items-center mb-2">
+              <span class="text-[#cba6f7] font-mono">const</span>
+              <span class="text-[#89b4fa] font-mono ml-2">email</span>
+              <span class="text-[#6c7086] font-mono">=</span>
+            </div>
+            <input
+              type="email"
+              name="email"
+              required
+              class="w-full bg-[#11111b] border border-[#313244] rounded px-3 py-2 text-[#cdd6f4] font-mono focus:outline-none focus:border-[#89b4fa] focus:ring-1 focus:ring-[#89b4fa]"
+              placeholder='"user@example.com"'
+            />
+          </div>
+
+          <div>
+            <div class="flex items-center mb-2">
+              <span class="text-[#cba6f7] font-mono">const</span>
+              <span class="text-[#89b4fa] font-mono ml-2">password</span>
+              <span class="text-[#6c7086] font-mono">=</span>
+            </div>
+            <input
+              type="password"
+              name="password"
+              required
+              class="w-full bg-[#11111b] border border-[#313244] rounded px-3 py-2 text-[#cdd6f4] font-mono focus:outline-none focus:border-[#89b4fa] focus:ring-1 focus:ring-[#89b4fa]"
+              placeholder='"********"'
+            />
+          </div>
+
+          <div class="pt-4">
+            <button
+              type="submit"
+              class="w-full bg-[#89b4fa] hover:bg-[#b4befe] text-[#1e1e2e] font-mono py-2 px-4 rounded transition-colors duration-200"
+            >
+              return await authenticate();
+            </button>
+          </div>
+        </form>
+
+        <div class="mt-8 text-center font-mono">
+          <span class="text-[#6c7086]">// Need an account?</span>
+          <a href="/register" class="text-[#89b4fa] hover:text-[#b4befe] ml-2">
+            register()
+          </a>
+        </div>
+
+        <div class="text-[#6c7086] font-mono mt-4">}</div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const form = document.querySelector('form');
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: formData.get('email'),
+          password: formData.get('password'),
+        }),
+      });
+      
+      if (response.ok) {
+        const user = await response.json();
+        console.log('Login successful:', user);
+        // Wait a bit to ensure cookie is set
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 100);
+      } else {
+        const error = await response.text();
+        console.error('Login failed:', error);
+        alert(error || 'Login failed');
+      }
+    } catch (error) {
+      console.error('Error during login:', error);
+      alert('Login failed');
+    }
+  });
+</script>

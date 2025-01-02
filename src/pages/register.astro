@@ -1,0 +1,142 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Register">
+  <div class="min-h-screen bg-[#1e1e2e] py-12">
+    <div class="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="bg-[#181825] rounded-lg overflow-hidden border border-[#313244] p-8 shadow-lg">
+        <div class="font-mono mb-8">
+          <div class="text-[#6c7086]">// Create new account</div>
+          <div class="text-lg">
+            <span class="text-[#cba6f7]">async function</span>
+            <span class="text-[#89b4fa]">register</span>
+            <span class="text-[#6c7086]">(</span>
+            <span class="text-[#f5c2e7]">newUser</span>
+            <span class="text-[#6c7086]">)</span>
+            <span class="text-[#6c7086]"> {</span>
+          </div>
+        </div>
+
+        <form action="/api/auth/register" method="POST" class="space-y-6 pl-4">
+          <div>
+            <div class="flex items-center mb-2">
+              <span class="text-[#cba6f7] font-mono">const</span>
+              <span class="text-[#89b4fa] font-mono ml-2">name</span>
+              <span class="text-[#6c7086] font-mono">=</span>
+            </div>
+            <input
+              type="text"
+              name="name"
+              required
+              class="w-full bg-[#11111b] border border-[#313244] rounded px-3 py-2 text-[#cdd6f4] font-mono focus:outline-none focus:border-[#89b4fa] focus:ring-1 focus:ring-[#89b4fa]"
+              placeholder='"John Doe"'
+            />
+          </div>
+
+          <div>
+            <div class="flex items-center mb-2">
+              <span class="text-[#cba6f7] font-mono">const</span>
+              <span class="text-[#89b4fa] font-mono ml-2">email</span>
+              <span class="text-[#6c7086] font-mono">=</span>
+            </div>
+            <input
+              type="email"
+              name="email"
+              required
+              class="w-full bg-[#11111b] border border-[#313244] rounded px-3 py-2 text-[#cdd6f4] font-mono focus:outline-none focus:border-[#89b4fa] focus:ring-1 focus:ring-[#89b4fa]"
+              placeholder='"user@example.com"'
+            />
+          </div>
+
+          <div>
+            <div class="flex items-center mb-2">
+              <span class="text-[#cba6f7] font-mono">const</span>
+              <span class="text-[#89b4fa] font-mono ml-2">password</span>
+              <span class="text-[#6c7086] font-mono">=</span>
+            </div>
+            <input
+              type="password"
+              name="password"
+              required
+              class="w-full bg-[#11111b] border border-[#313244] rounded px-3 py-2 text-[#cdd6f4] font-mono focus:outline-none focus:border-[#89b4fa] focus:ring-1 focus:ring-[#89b4fa]"
+              placeholder='"********"'
+            />
+          </div>
+
+          <div>
+            <div class="flex items-center mb-2">
+              <span class="text-[#cba6f7] font-mono">const</span>
+              <span class="text-[#89b4fa] font-mono ml-2">confirmPassword</span>
+              <span class="text-[#6c7086] font-mono">=</span>
+            </div>
+            <input
+              type="password"
+              name="confirmPassword"
+              required
+              class="w-full bg-[#11111b] border border-[#313244] rounded px-3 py-2 text-[#cdd6f4] font-mono focus:outline-none focus:border-[#89b4fa] focus:ring-1 focus:ring-[#89b4fa]"
+              placeholder='"********"'
+            />
+          </div>
+
+          <div class="pt-4">
+            <button
+              type="submit"
+              class="w-full bg-[#89b4fa] hover:bg-[#b4befe] text-[#1e1e2e] font-mono py-2 px-4 rounded transition-colors duration-200"
+            >
+              return await createAccount();
+            </button>
+          </div>
+        </form>
+
+        <div class="mt-8 text-center font-mono">
+          <span class="text-[#6c7086]">// Already have an account?</span>
+          <a href="/login" class="text-[#89b4fa] hover:text-[#b4befe] ml-2">
+            login()
+          </a>
+        </div>
+
+        <div class="text-[#6c7086] font-mono mt-4">}</div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const form = document.querySelector('form');
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const password = formData.get('password');
+    const confirmPassword = formData.get('confirmPassword');
+
+    if (password !== confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.get('name'),
+          email: formData.get('email'),
+          password: password,
+        }),
+      });
+      
+      if (response.ok) {
+        window.location.href = '/login';
+      } else {
+        const error = await response.text();
+        alert(error || 'Registration failed');
+      }
+    } catch (error) {
+      console.error('Error during registration:', error);
+      alert('Registration failed');
+    }
+  });
+</script>

@@ -1,0 +1,191 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { requireAdmin } from '../../../middleware/auth';
+import { PrismaClient } from '@prisma/client';
+
+// Check admin permissions
+const user = await requireAdmin(Astro);
+if (user instanceof Response) return user;
+
+const prisma = new PrismaClient();
+const posts = await prisma.post.findMany({
+  orderBy: { createdAt: 'desc' },
+  include: { author: { select: { name: true } } },
+});
+await prisma.$disconnect();
+---
+
+<Layout title="Manage Posts">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="font-mono">
+      <div class="text-[#6c7086]">// Posts Management</div>
+      <div class="text-xl">
+        <span class="text-[#cba6f7]">class</span>
+        <span class="text-[#89b4fa]">PostsManager</span>
+        <span class="text-[#6c7086]"> {</span>
+      </div>
+    </div>
+
+    <div class="flex justify-end mt-6">
+      <a
+        href="/admin/posts/new"
+        class="font-mono text-[#89b4fa] hover:text-[#b4befe] transition-colors"
+      >
+        createNewPost()
+      </a>
+    </div>
+
+    <div class="bg-[#181825] rounded-lg border border-[#313244] mt-6">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-[#313244]">
+          <thead class="bg-[#11111b]">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase">Title</th>
+              <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase">Author</th>
+              <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase">Status</th>
+              <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[#313244]" id="postsTable">
+            {posts.map((post) => (
+              <tr class="hover:bg-[#11111b] transition-colors">
+                <td class="px-6 py-4 font-mono">
+                  <span class="text-[#89b4fa]">{post.title}</span>
+                </td>
+                <td class="px-6 py-4 font-mono">
+                  <span class="text-[#a6e3a1]">{post.author.name}</span>
+                </td>
+                <td class="px-6 py-4 font-mono">
+                  <div class="flex items-center space-x-2">
+                    <span class={`text-${post.published ? '[#a6e3a1]' : '[#f9e2af]'}`}>
+                      {post.published ? 'Published' : 'Draft'}
+                    </span>
+                    {post.archived && (
+                      <span class="text-[#f38ba8]">• Archived</span>
+                    )}
+                  </div>
+                </td>
+                <td class="px-6 py-4 font-mono">
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      data-action="publish"
+                      data-post-id={post.id}
+                      data-published={post.published.toString()}
+                      class="bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-3 py-1.5 rounded transition-colors"
+                    >
+                      {post.published ? 'unpublish()' : 'publish()'}
+                    </button>
+                    <button
+                      type="button"
+                      data-action="archive"
+                      data-post-id={post.id}
+                      data-archived={post.archived.toString()}
+                      class="bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-3 py-1.5 rounded transition-colors"
+                    >
+                      {post.archived ? 'unarchive()' : 'archive()'}
+                    </button>
+                    <a
+                      href={`/admin/posts/edit/${post.id}`}
+                      class="bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-3 py-1.5 rounded transition-colors"
+                    >
+                      edit()
+                    </a>
+                    <button
+                      type="button"
+                      data-action="delete"
+                      data-post-id={post.id}
+                      class="bg-[#181825] border border-[#f38ba8] text-[#f38ba8] hover:bg-[#f38ba8] hover:text-[#11111b] px-3 py-1.5 rounded transition-all"
+                    >
+                      delete()
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="font-mono text-[#6c7086] mt-8">}</div>
+  </div>
+</Layout>
+
+<script>
+  async function refreshPage() {
+    window.location.reload();
+  }
+
+  // Handle post actions (publish/unpublish, archive/unarchive, delete)
+  document.addEventListener('click', async (e) => {
+    const button = e.target.closest('button[data-action]');
+    if (!button) return;
+
+    const action = button.dataset.action;
+    const postId = button.dataset.postId;
+    
+    if (!postId) {
+      console.error('No post ID found');
+      return;
+    }
+
+    try {
+      if (action === 'delete') {
+        if (!confirm('Are you sure you want to delete this post?')) {
+          return;
+        }
+
+        const response = await fetch(`/api/posts/${postId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to delete post');
+        }
+
+        await refreshPage();
+      } else if (action === 'publish' || action === 'archive') {
+        // Get current state from data attribute
+        const stateAttr = action === 'publish' ? 'published' : 'archived';
+        const currentState = button.dataset[stateAttr] === 'true';
+        
+        console.log(`Action: ${action}`);
+        console.log(`State attribute: ${stateAttr}`);
+        console.log(`Current state: ${currentState}`);
+        console.log(`Button dataset:`, button.dataset);
+
+        // Create request body with the action as the key
+        const requestBody = {
+          [action]: !currentState
+        };
+        
+        console.log('Request body:', requestBody);
+
+        const response = await fetch(`/api/posts/${postId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify(requestBody)
+        });
+
+        console.log('Response status:', response.status);
+        const responseData = await response.json();
+        console.log('Response data:', responseData);
+
+        if (!response.ok) {
+          throw new Error(responseData.error || `Failed to ${action} post`);
+        }
+
+        await refreshPage();
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert(error instanceof Error ? error.message : `Failed to ${action} post`);
+    }
+  });
+</script>

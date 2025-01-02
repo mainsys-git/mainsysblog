@@ -1,0 +1,246 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getPost } from '../../utils/posts';
+import { getUser } from '../../middleware/auth';
+
+const { id } = Astro.params;
+const post = await getPost(id);
+const user = await getUser(Astro);
+
+if (!post) {
+  return new Response('Post not found', { status: 404 });
+}
+
+// Parse the content
+const blocks = JSON.parse(post.content || '[]');
+---
+
+<Layout title={post.title}>
+  <div class="min-h-screen bg-[#1e1e2e] py-12">
+    <article class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="bg-[#181825] rounded-lg overflow-hidden border border-[#313244] p-8 shadow-lg">
+        <!-- Header -->
+        <header class="mb-10">
+          <div class="flex items-center text-sm text-[#6c7086] font-mono mb-4">
+            <span class="text-[#cba6f7]">class</span>
+            <span class="text-[#89b4fa] ml-2">Post</span>
+            <span class="text-[#6c7086] ml-2">{`{`}</span>
+          </div>
+
+          <h1 class="text-4xl font-mono font-bold mb-6 pl-4">
+            <span class="text-[#cba6f7]">function</span>
+            <span class="text-[#89b4fa]"> {post.title}</span>
+            <span class="text-[#6c7086]">()</span>
+          </h1>
+
+          <div class="flex flex-wrap items-center gap-6 text-sm text-[#6c7086] font-mono mb-4 pl-8">
+            <span>
+              <span class="text-[#f5c2e7]">@author</span>
+              <span class="text-[#cdd6f4] ml-2">{post.author?.name || 'Anonymous'}</span>
+            </span>
+            <span>
+              <span class="text-[#cba6f7]">@date</span>
+              <span class="text-[#cdd6f4] ml-2">{new Date(post.createdAt).toLocaleDateString()}</span>
+            </span>
+            {post.archived && (
+              <span>
+                <span class="text-[#fab387]">@archived</span>
+              </span>
+            )}
+          </div>
+        </header>
+
+        <!-- Content -->
+        <div class="pl-8 pr-4">
+          <div class="bg-[#11111b] rounded-lg p-8 border border-[#313244] shadow-inner">
+            <div class="prose prose-invert max-w-none space-y-6">
+              {blocks.map((block: any) => (
+                <>
+                  {block.type === 'text' && (
+                    <div class="prose prose-invert max-w-none">
+                      <p class="text-[#cdd6f4] whitespace-pre-wrap">{block.content}</p>
+                    </div>
+                  )}
+                  
+                  {block.type === 'image' && (
+                    <div class="my-6 relative group">
+                      <img 
+                        src={block.url} 
+                        alt={block.alt || ''} 
+                        class="rounded-lg shadow-lg w-full max-h-[600px] object-contain mx-auto cursor-zoom-in transition-transform hover:scale-[1.02]"
+                      />
+                      {block.alt && (
+                        <p class="mt-2 text-center text-sm text-[#6c7086] font-mono">{block.alt}</p>
+                      )}
+                    </div>
+                  )}
+                  
+                  {block.type === 'link' && (
+                    <div class="my-4">
+                      <a 
+                        href={block.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-[#89b4fa] hover:text-[#b4befe] transition-colors duration-200"
+                      >
+                        {block.text || block.url}
+                      </a>
+                    </div>
+                  )}
+
+                  {block.type === 'greeting' && (
+                    <div class="my-6 font-mono text-[#f5c2e7]">
+                      {block.content.replace('$VISITOR_NAME', user ? user.name : 'Guest')}
+                    </div>
+                  )}
+
+                  {block.type === 'separator' && (
+                    <div class="flex items-center space-x-4 py-4">
+                      <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#313244] to-transparent"></div>
+                      <div class="text-[#6c7086] font-mono text-sm">// * * *</div>
+                      <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#313244] to-transparent"></div>
+                    </div>
+                  )}
+                </>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-10">
+          <div class="text-[#6c7086] font-mono">}</div>
+
+          <div class="mt-8 text-right">
+            <a
+              href="/admin/posts"
+              class="inline-flex items-center text-[#89b4fa] hover:text-[#b4befe] font-mono group transition-colors duration-200"
+            >
+              <span class="mr-2">return</span>
+              <span class="group-hover:translate-x-[-2px] transition-transform duration-200">goBack()</span>
+            </a>
+          </div>
+        </footer>
+      </div>
+    </article>
+  </div>
+</Layout>
+
+<!-- Image Viewer Modal -->
+<div 
+  id="imageViewer" 
+  class="fixed inset-0 bg-[#11111b]/90 opacity-0 invisible z-50 transition-opacity duration-300"
+>
+  <button 
+    id="closeButton"
+    class="absolute top-4 right-4 w-10 h-10 bg-[#11111b] text-[#cdd6f4] rounded-full flex items-center justify-center hover:bg-[#1e1e2e] transition-colors text-xl z-[60]"
+  >
+    ×
+  </button>
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <img 
+      id="viewerImage"
+      src="" 
+      alt=""
+      class="max-w-full max-h-full w-auto h-auto object-contain cursor-zoom-out"
+    />
+  </div>
+</div>
+
+<script>
+  let isZoomed = false;
+
+  function closeViewer() {
+    const viewer = document.getElementById('imageViewer');
+    const viewerImage = document.getElementById('viewerImage');
+    
+    viewer.classList.add('opacity-0');
+    setTimeout(() => {
+      viewer.classList.add('invisible');
+      viewerImage.src = '';
+      document.body.style.overflow = '';
+    }, 300);
+    isZoomed = false;
+  }
+
+  function openViewer(img) {
+    const viewer = document.getElementById('imageViewer');
+    const viewerImage = document.getElementById('viewerImage');
+    
+    viewerImage.src = img.src;
+    viewerImage.alt = img.alt;
+    viewer.classList.remove('invisible');
+    requestAnimationFrame(() => {
+      viewer.classList.remove('opacity-0');
+    });
+    document.body.style.overflow = 'hidden';
+    isZoomed = true;
+  }
+
+  // Add click handlers to all images
+  document.addEventListener('DOMContentLoaded', () => {
+    const images = document.querySelectorAll('img:not(#viewerImage)');
+    images.forEach(img => {
+      if (!img.hasAttribute('data-zoom-initialized')) {
+        img.classList.add('cursor-zoom-in');
+        img.addEventListener('click', () => openViewer(img));
+        img.setAttribute('data-zoom-initialized', 'true');
+      }
+    });
+
+    // Close button handler
+    document.getElementById('closeButton').addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeViewer();
+    });
+
+    // Close on background click
+    document.getElementById('imageViewer').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget || e.target.id === 'viewerImage') {
+        closeViewer();
+      }
+    });
+
+    // Close on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isZoomed) {
+        closeViewer();
+      }
+    });
+  });
+</script>
+
+<style>
+  .prose {
+    --tw-prose-invert-body: #cdd6f4;
+    --tw-prose-invert-headings: #cdd6f4;
+    --tw-prose-invert-links: #89b4fa;
+    --tw-prose-invert-bold: #cdd6f4;
+  }
+
+  .prose :global(p) {
+    margin-bottom: 1.5em;
+  }
+
+  .prose :global(img) {
+    border-radius: 0.5rem;
+    margin: 2rem auto;
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.1);
+    max-height: 600px;
+    object-fit: contain;
+    transition: transform 0.2s ease-out;
+  }
+
+  .prose :global(img:hover) {
+    transform: scale(1.02);
+  }
+
+  #imageViewer {
+    backdrop-filter: blur(8px);
+  }
+
+  #viewerImage {
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+</style>

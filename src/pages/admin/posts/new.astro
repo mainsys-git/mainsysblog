@@ -1,0 +1,395 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { requireAdmin } from '../../../middleware/auth';
+
+// Check admin permissions
+const user = await requireAdmin(Astro);
+if (!user) return Astro.redirect('/admin/login');
+---
+
+<Layout title="New Post">
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="font-mono">
+      <div class="text-[#6c7086]">// Post Creator</div>
+      <div class="text-xl">
+        <span class="text-[#cba6f7]">function</span>
+        <span class="text-[#89b4fa]">createPost</span>
+        <span class="text-[#6c7086]">() {</span>
+      </div>
+    </div>
+
+    <form id="postForm" class="space-y-6 mt-6">
+      <div>
+        <label for="title" class="block text-sm font-mono text-[#6c7086]">title</label>
+        <input
+          type="text"
+          id="title"
+          name="title"
+          required
+          class="mt-1 block w-full bg-[#181825] border border-[#313244] rounded-md text-[#cdd6f4] px-3 py-2 focus:border-[#89b4fa] focus:ring-[#89b4fa] font-mono"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-mono text-[#6c7086] mb-2">content</label>
+        <div id="contentBlocks" class="space-y-4">
+          <!-- Content blocks will be added here -->
+        </div>
+        
+        <div class="mt-4 flex space-x-4">
+          <button
+            type="button"
+            id="addTextBtn"
+            class="font-mono bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-3 py-1.5 rounded transition-colors"
+          >
+            addText()
+          </button>
+          <button
+            type="button"
+            id="addImageBtn"
+            class="font-mono bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-3 py-1.5 rounded transition-colors"
+          >
+            addImage()
+          </button>
+          <button
+            type="button"
+            id="addLinkBtn"
+            class="font-mono bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-3 py-1.5 rounded transition-colors"
+          >
+            addLink()
+          </button>
+          <button
+            type="button"
+            id="addGreetingBtn"
+            class="font-mono bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-3 py-1.5 rounded transition-colors"
+          >
+            addGreeting()
+          </button>
+          <button
+            type="button"
+            id="addSeparatorBtn"
+            class="font-mono bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-3 py-1.5 rounded transition-colors"
+          >
+            addSeparator()
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <label class="flex items-center">
+          <input
+            type="checkbox"
+            id="published"
+            name="published"
+            class="rounded border-[#313244] bg-[#181825] text-[#89b4fa]"
+          />
+          <span class="ml-2 text-sm font-mono text-[#6c7086]">publish</span>
+        </label>
+      </div>
+
+      <div class="flex justify-end space-x-4">
+        <a
+          href="/admin/posts"
+          class="font-mono bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-3 py-1.5 rounded transition-colors"
+        >
+          cancel()
+        </a>
+        <button
+          type="submit"
+          class="font-mono bg-[#181825] border border-[#89b4fa] text-[#89b4fa] hover:bg-[#89b4fa] hover:text-[#11111b] px-3 py-1.5 rounded transition-colors"
+        >
+          createPost()
+        </button>
+      </div>
+    </form>
+
+    <div class="font-mono text-[#6c7086] mt-8">}</div>
+  </div>
+</Layout>
+
+<style>
+  textarea, input {
+    caret-color: #a6e3a1 !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+  }
+  
+  textarea:focus, input:focus {
+    outline: none;
+    border-color: #89b4fa !important;
+    box-shadow: 0 0 0 1px #89b4fa !important;
+  }
+
+  .content-block {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+  }
+
+  /* Typing animation */
+  @keyframes fadeInRight {
+    0% {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .animate-typing {
+    display: inline-block;
+    animation: fadeInRight 0.15s ease-out forwards;
+    color: #a6e3a1;
+  }
+</style>
+
+<script define:vars={{ user }}>
+  let blockCounter = 0;
+  const contentBlocks = document.getElementById('contentBlocks');
+
+  function createTextBlock(content = '') {
+    const block = document.createElement('div');
+    block.dataset.type = 'text';
+    block.className = 'content-block relative bg-[#11111b] border border-[#313244] rounded p-4';
+    
+    block.innerHTML = `
+      <textarea
+        class="w-full min-h-[100px] bg-[#1e1e2e] border border-[#313244] rounded-md text-[#cdd6f4] px-3 py-2 focus:border-[#89b4fa] focus:ring-[#89b4fa] focus:ring-1 focus:outline-none font-mono"
+        placeholder="Enter your text here..."
+      >${content}</textarea>
+      <button
+        type="button"
+        onclick="this.parentElement.remove()"
+        class="absolute -top-1 right-0 w-6 h-6 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]"
+      >
+        x
+      </button>
+    `;
+
+    return block;
+  }
+
+  function createImageBlock(url = '', alt = '') {
+    const block = document.createElement('div');
+    block.dataset.type = 'image';
+    block.className = 'content-block relative bg-[#11111b] border border-[#313244] rounded p-4';
+    
+    block.innerHTML = `
+      <div class="flex gap-4 items-center">
+        <input
+          type="url"
+          class="flex-1 bg-[#1e1e2e] border border-[#313244] rounded-md text-[#cdd6f4] px-3 py-2 focus:border-[#89b4fa] focus:ring-[#89b4fa] focus:ring-1 focus:outline-none font-mono"
+          placeholder="Image URL"
+          value="${url}"
+        />
+        <input
+          type="text"
+          class="flex-1 bg-[#1e1e2e] border border-[#313244] rounded-md text-[#cdd6f4] px-3 py-2 focus:border-[#89b4fa] focus:ring-[#89b4fa] focus:ring-1 focus:outline-none font-mono"
+          placeholder="Image description"
+          value="${alt}"
+        />
+      </div>
+      <button
+        type="button"
+        onclick="this.parentElement.remove()"
+        class="absolute -top-1 right-0 w-6 h-6 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]"
+      >
+        x
+      </button>
+    `;
+
+    return block;
+  }
+
+  function createLinkBlock(url = '', text = '') {
+    const block = document.createElement('div');
+    block.dataset.type = 'link';
+    block.className = 'content-block relative bg-[#11111b] border border-[#313244] rounded p-4';
+    
+    block.innerHTML = `
+      <div class="flex gap-4 items-center">
+        <input
+          type="url"
+          class="flex-1 bg-[#1e1e2e] border border-[#313244] rounded-md text-[#cdd6f4] px-3 py-2 focus:border-[#89b4fa] focus:ring-[#89b4fa] focus:ring-1 focus:outline-none font-mono"
+          placeholder="https://example.com"
+          value="${url}"
+        />
+        <input
+          type="text"
+          class="flex-1 bg-[#1e1e2e] border border-[#313244] rounded-md text-[#cdd6f4] px-3 py-2 focus:border-[#89b4fa] focus:ring-[#89b4fa] focus:ring-1 focus:outline-none font-mono"
+          placeholder="Link text"
+          value="${text}"
+        />
+      </div>
+      <button
+        type="button"
+        onclick="this.parentElement.remove()"
+        class="absolute -top-1 right-0 w-6 h-6 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]"
+      >
+        x
+      </button>
+    `;
+
+    return block;
+  }
+
+  function createGreetingBlock(content = '') {
+    const block = document.createElement('div');
+    block.dataset.type = 'greeting';
+    block.className = 'content-block relative bg-[#11111b] border border-[#313244] rounded p-4';
+    
+    const defaultGreeting = `Hello $VISITOR_NAME, I'm ${user.name}!`;
+    
+    block.innerHTML = `
+      <div class="drag-handle cursor-move absolute -top-1 left-2 w-6 h-6 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]">
+        ⋮⋮
+      </div>
+      <button
+        type="button"
+        onclick="this.parentElement.remove()"
+        class="absolute -top-1 right-0 w-6 h-6 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]"
+      >
+        x
+      </button>
+      <input
+        type="text"
+        class="w-full bg-transparent border-none focus:ring-0 text-[#cdd6f4]"
+        placeholder="Enter greeting..."
+        value="${content || defaultGreeting}"
+      />
+      <p class="mt-2 text-xs text-[#6c7086]">Use $VISITOR_NAME to insert the reader's name</p>
+    `;
+
+    setupDragAndDrop(block);
+    return block;
+  }
+
+  function createSeparatorBlock() {
+    const block = document.createElement('div');
+    block.dataset.type = 'separator';
+    block.className = 'content-block relative bg-[#11111b] border border-[#313244] rounded p-4';
+    
+    block.innerHTML = `
+      <div class="flex items-center space-x-4">
+        <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#313244] to-transparent"></div>
+        <div class="text-[#6c7086] font-mono text-sm">// * * *</div>
+        <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#313244] to-transparent"></div>
+      </div>
+      <button
+        type="button"
+        onclick="this.parentElement.remove()"
+        class="absolute -top-1 right-0 w-6 h-6 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]"
+      >
+        x
+      </button>
+    `;
+
+    return block;
+  }
+
+  // Add click handlers for buttons
+  document.getElementById('addTextBtn').addEventListener('click', () => {
+    const block = createTextBlock();
+    contentBlocks.appendChild(block);
+  });
+
+  document.getElementById('addImageBtn').addEventListener('click', () => {
+    const block = createImageBlock();
+    contentBlocks.appendChild(block);
+  });
+
+  document.getElementById('addLinkBtn').addEventListener('click', () => {
+    const block = createLinkBlock();
+    contentBlocks.appendChild(block);
+  });
+
+  document.getElementById('addGreetingBtn').addEventListener('click', () => {
+    const block = createGreetingBlock();
+    contentBlocks.appendChild(block);
+  });
+
+  document.getElementById('addSeparatorBtn').addEventListener('click', () => {
+    const block = createSeparatorBlock();
+    contentBlocks.appendChild(block);
+  });
+
+  // Handle form submission
+  document.getElementById('postForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const title = document.getElementById('title').value;
+    const published = document.getElementById('published').checked;
+    const blocks = Array.from(contentBlocks.children).map(block => {
+      const type = block.dataset.type;
+      
+      switch (type) {
+        case 'text':
+          return {
+            type,
+            content: block.querySelector('textarea').value
+          };
+        case 'image': {
+          const [urlInput, altInput] = block.querySelectorAll('input');
+          return {
+            type,
+            url: urlInput.value,
+            alt: altInput.value
+          };
+        }
+        case 'link': {
+          const [urlInput, textInput] = block.querySelectorAll('input');
+          return {
+            type,
+            url: urlInput.value,
+            text: textInput.value
+          };
+        }
+        case 'greeting':
+          return {
+            type,
+            content: block.querySelector('input').value
+          };
+        case 'separator':
+          return {
+            type: 'separator'
+          };
+      }
+    }).filter(block => {
+      // Filter out empty blocks
+      if (block.type === 'text') {
+        return block.content.trim() !== '';
+      } else if (block.type === 'image') {
+        return block.url.trim() !== '';
+      } else if (block.type === 'link') {
+        return block.url.trim() !== '';
+      }
+      return true;
+    });
+
+    try {
+      const response = await fetch('/api/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          title,
+          content: blocks,
+          published
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to create post');
+      }
+
+      window.location.href = '/admin/posts';
+    } catch (error) {
+      console.error('Error creating post:', error);
+      alert(error instanceof Error ? error.message : 'Failed to create post');
+    }
+  });
+</script>

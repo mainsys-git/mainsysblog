@@ -1,0 +1,668 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import { getPost } from '../../../../utils/posts';
+import { requireAdmin } from '../../../../middleware/auth';
+
+// Check admin permissions
+const user = await requireAdmin(Astro);
+if (!user) return Astro.redirect('/admin/login');
+
+const { id } = Astro.params;
+const post = await getPost(id);
+
+// Get post data
+try {
+  if (!post) {
+    return new Response('Post not found', { status: 404 });
+  }
+} catch (error) {
+  console.error('Failed to load post:', error);
+  return Astro.redirect('/admin/posts');
+}
+---
+
+<Layout title="Edit Post">
+  <div class="min-h-screen bg-[#1e1e2e] text-[#cdd6f4] p-8">
+    <div class="max-w-5xl mx-auto space-y-8">
+      <!-- Header -->
+      <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-[#89b4fa]">Edit Post</h1>
+        <a 
+          href="/admin/posts"
+          class="px-4 py-2 bg-[#313244] text-[#cdd6f4] rounded-lg hover:bg-[#45475a] transition-colors"
+        >
+          Back to Posts
+        </a>
+      </div>
+
+      <!-- Edit Form -->
+      <form id="postForm" class="space-y-8">
+        <!-- Title Section -->
+        <div class="bg-[#181825] rounded-lg p-6 border border-[#313244] shadow-lg">
+          <label class="block text-sm font-medium text-[#89b4fa] mb-2">Title</label>
+          <input
+            type="text"
+            id="title"
+            value={post.title}
+            class="w-full bg-[#11111b] border border-[#313244] rounded-lg px-4 py-2 text-[#cdd6f4] focus:border-[#89b4fa] focus:ring-1 focus:ring-[#89b4fa] transition-colors"
+            placeholder="Enter post title..."
+          />
+        </div>
+
+        <!-- Content Blocks -->
+        <div class="bg-[#181825] rounded-lg p-6 border border-[#313244] shadow-lg space-y-6">
+          <div class="flex items-center justify-between">
+            <label class="block text-sm font-medium text-[#89b4fa]">Content Blocks</label>
+            
+            <!-- Block Type Buttons -->
+            <div class="flex items-center gap-3">
+              <button
+                type="button"
+                id="addTextBtn"
+                class="group relative px-3 py-1.5 bg-[#11111b] border border-[#313244] hover:border-[#89b4fa] rounded-lg transition-colors"
+              >
+                <span class="font-mono">addText()</span>
+                <span class="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-[#313244] rounded">
+                  Add a text block
+                </span>
+              </button>
+
+              <button
+                type="button"
+                id="addImageBtn"
+                class="group relative px-3 py-1.5 bg-[#11111b] border border-[#313244] hover:border-[#89b4fa] rounded-lg transition-colors"
+              >
+                <span class="font-mono">addImage()</span>
+                <span class="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-[#313244] rounded">
+                  Add an image
+                </span>
+              </button>
+
+              <button
+                type="button"
+                id="addLinkBtn"
+                class="group relative px-3 py-1.5 bg-[#11111b] border border-[#313244] hover:border-[#89b4fa] rounded-lg transition-colors"
+              >
+                <span class="font-mono">addLink()</span>
+                <span class="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-[#313244] rounded">
+                  Add a link
+                </span>
+              </button>
+
+              <button
+                type="button"
+                id="addGreetingBtn"
+                class="group relative px-3 py-1.5 bg-[#11111b] border border-[#313244] hover:border-[#89b4fa] rounded-lg transition-colors"
+              >
+                <span class="font-mono">addGreeting()</span>
+                <span class="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-[#313244] rounded">
+                  Add a greeting
+                </span>
+              </button>
+
+              <button
+                type="button"
+                id="addSeparatorBtn"
+                class="group relative px-3 py-1.5 bg-[#11111b] border border-[#313244] hover:border-[#89b4fa] rounded-lg transition-colors"
+              >
+                <span class="font-mono">addSeparator()</span>
+                <span class="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-[#313244] rounded">
+                  Add a separator
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Content Blocks Container -->
+          <div 
+            id="contentBlocks"
+            class="space-y-4 min-h-[200px] p-4 bg-[#11111b] rounded-lg border-2 border-dashed border-[#313244] transition-colors"
+          >
+            <!-- Blocks will be inserted here -->
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex justify-end">
+          <button
+            type="submit"
+            class="px-6 py-2 bg-[#89b4fa] text-[#11111b] font-medium rounded-lg hover:bg-[#b4befe] transition-colors"
+          >
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .content-block {
+    transition: all 0.2s ease-in-out;
+  }
+
+  .content-block:hover {
+    border-color: #45475a;
+  }
+
+  .content-block .drag-handle {
+    opacity: 0.5;
+    transition: opacity 0.2s ease-in-out;
+  }
+
+  .content-block:hover .drag-handle {
+    opacity: 1;
+  }
+
+  .border-t-[#89b4fa] {
+    border-top: 2px solid #89b4fa !important;
+  }
+
+  .border-b-[#89b4fa] {
+    border-bottom: 2px solid #89b4fa !important;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #11111b;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #313244;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #45475a;
+  }
+
+  /* Placeholder styling */
+  ::placeholder {
+    color: #6c7086;
+    opacity: 1;
+  }
+
+  /* Focus styles */
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: #89b4fa;
+    box-shadow: 0 0 0 1px #89b4fa;
+  }
+
+  /* Drag and drop area highlight */
+  #contentBlocks.drag-over {
+    border-color: #89b4fa;
+    background-color: #181825;
+  }
+</style>
+
+<script define:vars={{ post, user }}>
+  let blockCounter = 0;
+  const contentBlocks = document.getElementById('contentBlocks');
+
+  // File input setup
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.style.display = 'none';
+  document.body.appendChild(fileInput);
+
+  // Handle file selection
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const url = await uploadImage(file);
+      if (url) {
+        const activeBlock = document.activeElement?.closest('.content-block[data-type="image"]');
+        if (activeBlock) {
+          const urlInput = activeBlock.querySelector('input[type="url"]');
+          if (urlInput) {
+            urlInput.value = url;
+            return;
+          }
+        }
+        // Fallback: Create new block if no active block found
+        const block = createImageBlock(url);
+        contentBlocks.appendChild(block);
+      }
+    } catch (error) {
+      console.error('Failed to handle file:', error);
+    }
+  });
+
+  // Handle paste
+  contentBlocks.addEventListener('paste', async (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          try {
+            const url = await uploadImage(file);
+            if (url) {
+              const activeBlock = document.activeElement?.closest('.content-block[data-type="image"]');
+              if (activeBlock) {
+                const urlInput = activeBlock.querySelector('input[type="url"]');
+                if (urlInput) {
+                  urlInput.value = url;
+                  return;
+                }
+              }
+              // Fallback: Create new block if no active block found
+              const block = createImageBlock(url);
+              contentBlocks.appendChild(block);
+            }
+          } catch (error) {
+            console.error('Failed to handle paste:', error);
+          }
+        }
+        break;
+      }
+    }
+  });
+
+  // Handle drag and drop for images
+  contentBlocks.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  });
+
+  contentBlocks.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer?.files[0];
+    if (file?.type.startsWith('image/')) {
+      try {
+        const url = await uploadImage(file);
+        if (url) {
+          const block = createImageBlock(url);
+          contentBlocks.appendChild(block);
+        }
+      } catch (error) {
+        console.error('Failed to handle drop:', error);
+      }
+    }
+  });
+
+  async function uploadImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      const data = await response.json();
+      return data.url;
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload image. Please try again.');
+      return null;
+    }
+  }
+
+  function createTextBlock(content = '') {
+    const block = document.createElement('div');
+    block.dataset.type = 'text';
+    block.className = 'content-block relative bg-[#11111b] border border-[#313244] rounded p-4 pl-8';
+    
+    block.innerHTML = `
+      <div class="drag-handle cursor-move absolute left-2 top-1/2 -translate-y-1/2 w-4 h-8 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]">
+        ⋮⋮
+      </div>
+      <button
+        type="button"
+        onclick="this.parentElement.remove()"
+        class="absolute -top-1 right-0 w-6 h-6 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]"
+      >
+        x
+      </button>
+      <textarea
+        class="w-full bg-transparent border-none focus:ring-0 text-[#cdd6f4]"
+        rows="4"
+        placeholder="Enter text..."
+      >${content}</textarea>
+    `;
+
+    setupDragAndDrop(block);
+    return block;
+  }
+
+  function createImageBlock(url = '', alt = '') {
+    const block = document.createElement('div');
+    block.dataset.type = 'image';
+    block.className = 'content-block relative bg-[#11111b] border border-[#313244] rounded p-4 pl-8';
+    
+    block.innerHTML = `
+      <div class="drag-handle cursor-move absolute left-2 top-1/2 -translate-y-1/2 w-4 h-8 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]">
+        ⋮⋮
+      </div>
+      <button
+        type="button"
+        onclick="this.parentElement.remove()"
+        class="absolute -top-1 right-0 w-6 h-6 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]"
+      >
+        x
+      </button>
+      <div class="space-y-2">
+        <input
+          type="url"
+          class="w-full bg-transparent border-none focus:ring-0 text-[#cdd6f4]"
+          placeholder="Image URL..."
+          value="${url}"
+        />
+        <input
+          type="text"
+          class="w-full bg-transparent border-none focus:ring-0 text-[#6c7086]"
+          placeholder="Alt text..."
+          value="${alt}"
+        />
+      </div>
+    `;
+
+    setupDragAndDrop(block);
+    return block;
+  }
+
+  function createLinkBlock(url = '', text = '') {
+    const block = document.createElement('div');
+    block.dataset.type = 'link';
+    block.className = 'content-block relative bg-[#11111b] border border-[#313244] rounded p-4 pl-8';
+    
+    block.innerHTML = `
+      <div class="drag-handle cursor-move absolute left-2 top-1/2 -translate-y-1/2 w-4 h-8 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]">
+        ⋮⋮
+      </div>
+      <button
+        type="button"
+        onclick="this.parentElement.remove()"
+        class="absolute -top-1 right-0 w-6 h-6 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]"
+      >
+        x
+      </button>
+      <div class="space-y-2">
+        <input
+          type="url"
+          class="w-full bg-transparent border-none focus:ring-0 text-[#cdd6f4]"
+          placeholder="Link URL..."
+          value="${url}"
+        />
+        <input
+          type="text"
+          class="w-full bg-transparent border-none focus:ring-0 text-[#6c7086]"
+          placeholder="Link text..."
+          value="${text}"
+        />
+      </div>
+    `;
+
+    setupDragAndDrop(block);
+    return block;
+  }
+
+  function createGreetingBlock(content = '') {
+    const block = document.createElement('div');
+    block.dataset.type = 'greeting';
+    block.className = 'content-block relative bg-[#11111b] border border-[#313244] rounded p-4 pl-8';
+    
+    const defaultGreeting = `Hello $VISITOR_NAME, I'm ${user.name}!`;
+    
+    block.innerHTML = `
+      <div class="drag-handle cursor-move absolute left-2 top-1/2 -translate-y-1/2 w-4 h-8 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]">
+        ⋮⋮
+      </div>
+      <button
+        type="button"
+        onclick="this.parentElement.remove()"
+        class="absolute -top-1 right-0 w-6 h-6 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]"
+      >
+        x
+      </button>
+      <input
+        type="text"
+        class="w-full bg-transparent border-none focus:ring-0 text-[#cdd6f4]"
+        placeholder="Enter greeting..."
+        value="${content || defaultGreeting}"
+      />
+      <p class="mt-2 text-xs text-[#6c7086]">Use $VISITOR_NAME to insert the reader's name</p>
+    `;
+
+    setupDragAndDrop(block);
+    return block;
+  }
+
+  function createSeparatorBlock() {
+    const block = document.createElement('div');
+    block.dataset.type = 'separator';
+    block.className = 'content-block relative bg-[#11111b] border border-[#313244] rounded p-4 pl-8';
+    
+    block.innerHTML = `
+      <div class="drag-handle cursor-move absolute left-2 top-1/2 -translate-y-1/2 w-4 h-8 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]">
+        ⋮⋮
+      </div>
+      <button
+        type="button"
+        onclick="this.parentElement.remove()"
+        class="absolute -top-1 right-0 w-6 h-6 flex items-center justify-center text-[#6c7086] hover:text-[#89b4fa]"
+      >
+        x
+      </button>
+      <div class="flex items-center space-x-4">
+        <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#313244] to-transparent"></div>
+        <div class="text-[#6c7086] font-mono text-sm">// * * *</div>
+        <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#313244] to-transparent"></div>
+      </div>
+    `;
+
+    setupDragAndDrop(block);
+    return block;
+  }
+
+  // Add click handlers for buttons
+  document.getElementById('addTextBtn').addEventListener('click', () => {
+    const block = createTextBlock();
+    contentBlocks.appendChild(block);
+  });
+
+  document.getElementById('addImageBtn').addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  document.getElementById('addLinkBtn').addEventListener('click', () => {
+    const block = createLinkBlock();
+    contentBlocks.appendChild(block);
+  });
+
+  document.getElementById('addGreetingBtn').addEventListener('click', () => {
+    const block = createGreetingBlock();
+    contentBlocks.appendChild(block);
+  });
+
+  document.getElementById('addSeparatorBtn').addEventListener('click', () => {
+    const block = createSeparatorBlock();
+    contentBlocks.appendChild(block);
+  });
+
+  // Drag and Drop functionality
+  function setupDragAndDrop(block) {
+    const dragHandle = block.querySelector('.drag-handle');
+    if (!dragHandle) return;
+
+    dragHandle.draggable = true;
+
+    dragHandle.addEventListener('dragstart', (e) => {
+      block.classList.add('opacity-50');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    dragHandle.addEventListener('dragend', () => {
+      block.classList.remove('opacity-50');
+      
+      // Remove all drop indicators
+      Array.from(contentBlocks.children).forEach(block => {
+        block.classList.remove('border-t-[#89b4fa]', 'border-b-[#89b4fa]');
+      });
+    });
+
+    // Prevent dragging on the textarea/input elements
+    block.querySelectorAll('textarea, input').forEach(element => {
+      element.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+      });
+    });
+  }
+
+  contentBlocks.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    const draggedBlock = Array.from(contentBlocks.children).find(block => 
+      block.classList.contains('opacity-50')
+    );
+    if (!draggedBlock) return;
+
+    // Find the block we're dragging over
+    const blocks = Array.from(contentBlocks.children);
+    
+    // Remove highlight from all blocks
+    blocks.forEach(block => {
+      block.classList.remove('border-t-[#89b4fa]', 'border-b-[#89b4fa]');
+    });
+
+    // Find the closest block
+    const mouseY = e.clientY;
+    for (const block of blocks) {
+      const rect = block.getBoundingClientRect();
+      const midpoint = rect.top + rect.height / 2;
+
+      if (block !== draggedBlock) {
+        if (mouseY < midpoint) {
+          block.classList.add('border-t-[#89b4fa]');
+          contentBlocks.insertBefore(draggedBlock, block);
+          break;
+        } else {
+          block.classList.add('border-b-[#89b4fa]');
+          contentBlocks.insertBefore(draggedBlock, block.nextSibling);
+        }
+      }
+    }
+  });
+
+  // Load existing post content
+  if (post.content) {
+    try {
+      const blocks = JSON.parse(post.content);
+      blocks.forEach(block => {
+        let newBlock;
+        switch (block.type) {
+          case 'text':
+            newBlock = createTextBlock(block.content);
+            break;
+          case 'image':
+            newBlock = createImageBlock(block.url, block.alt);
+            break;
+          case 'link':
+            newBlock = createLinkBlock(block.url, block.text);
+            break;
+          case 'greeting':
+            newBlock = createGreetingBlock(block.content);
+            break;
+          case 'separator':
+            newBlock = createSeparatorBlock();
+            break;
+        }
+        if (newBlock) {
+          contentBlocks.appendChild(newBlock);
+        }
+      });
+    } catch (error) {
+      console.error('Error parsing post content:', error);
+    }
+  }
+
+  function getBlocksData() {
+    return Array.from(contentBlocks.children).map(block => {
+      const type = block.dataset.type;
+      
+      switch (type) {
+        case 'text':
+          return {
+            type,
+            content: block.querySelector('textarea').value
+          };
+        case 'image': {
+          const [urlInput, altInput] = block.querySelectorAll('input');
+          return {
+            type,
+            url: urlInput.value,
+            alt: altInput.value
+          };
+        }
+        case 'link': {
+          const [urlInput, textInput] = block.querySelectorAll('input');
+          return {
+            type,
+            url: urlInput.value,
+            text: textInput.value
+          };
+        }
+        case 'greeting':
+          return {
+            type,
+            content: block.querySelector('input').value
+          };
+        case 'separator':
+          return {
+            type: 'separator'
+          };
+      }
+    }).filter(Boolean);
+  }
+
+  // Handle form submission
+  document.getElementById('postForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = {
+      title: document.getElementById('title').value,
+      content: JSON.stringify(getBlocksData())
+    };
+
+    try {
+      const response = await fetch(`/api/posts/${post.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update post');
+      }
+
+      window.location.href = '/admin/posts';
+    } catch (error) {
+      console.error('Failed to update post:', error);
+      alert(error.message || 'Failed to update post. Please try again.');
+    }
+  });
+</script>

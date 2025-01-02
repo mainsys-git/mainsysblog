@@ -1,0 +1,210 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getPosts } from '../utils/posts';
+
+const posts = await getPosts();
+
+// Gruppiere Posts nach Monat/Jahr
+const groupedPosts = posts.reduce((groups: any, post) => {
+  const date = new Date(post.createdAt);
+  const key = `${date.getFullYear()}-${date.getMonth()}`;
+  if (!groups[key]) {
+    groups[key] = {
+      date,
+      posts: []
+    };
+  }
+  groups[key].posts.push(post);
+  return groups;
+}, {});
+
+// Sortiere nach Datum (neueste zuerst)
+const sortedGroups = Object.values(groupedPosts).sort((a: any, b: any) => 
+  b.date.getTime() - a.date.getTime()
+);
+
+function formatDate(date: Date) {
+  return new Intl.DateTimeFormat('de-DE', { 
+    month: 'long', 
+    year: 'numeric' 
+  }).format(date);
+}
+
+// Extrahiere einen Auszug aus dem Content
+function getExcerpt(content: string) {
+  try {
+    const blocks = JSON.parse(content);
+    const textBlocks = blocks.filter((block: any) => block.type === 'text');
+    if (textBlocks.length > 0) {
+      const text = textBlocks[0].content;
+      return text.length > 120 ? text.substring(0, 120) + '...' : text;
+    }
+  } catch (e) {}
+  return '';
+}
+
+---
+
+<Layout title="Blog">
+  <div class="min-h-screen bg-[#1e1e2e] py-8">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Header -->
+      <header class="text-center mb-16">
+        <div class="inline-block bg-[#181825] rounded-2xl p-8 border border-[#313244] shadow-lg mb-12">
+          <h1 class="text-6xl font-bold text-[#cdd6f4] mb-6 font-mono leading-tight">
+            <span class="text-[#cba6f7]">const</span> 
+            <span class="text-[#89b4fa]">blog</span> 
+            <span class="text-[#6c7086]">=</span> 
+            <span class="text-[#f5c2e7]">{`{`}</span>
+          </h1>
+          <p class="text-[#6c7086] text-lg max-w-2xl mx-auto font-mono leading-relaxed">
+            Exploring thoughts, sharing experiences, and documenting the journey through elegant code snippets and compelling stories.
+          </p>
+        </div>
+        
+        <!-- Stats -->
+        <div class="grid grid-cols-3 gap-8 max-w-3xl mx-auto">
+          <div class="bg-[#181825] rounded-lg p-4 border border-[#313244] hover:border-[#45475a] transition-all duration-300">
+            <div class="text-2xl font-bold text-[#89b4fa] font-mono">{posts.length}</div>
+            <div class="text-[#6c7086] text-sm font-mono">Stories Written</div>
+          </div>
+          <div class="bg-[#181825] rounded-lg p-4 border border-[#313244] hover:border-[#45475a] transition-all duration-300">
+            <div class="text-2xl font-bold text-[#f5c2e7] font-mono">{sortedGroups.length}</div>
+            <div class="text-[#6c7086] text-sm font-mono">Months Active</div>
+          </div>
+          <div class="bg-[#181825] rounded-lg p-4 border border-[#313244] hover:border-[#45475a] transition-all duration-300">
+            <div class="text-2xl font-bold text-[#cba6f7] font-mono">
+              {posts.reduce((total: number, post: any) => {
+                try {
+                  const blocks = JSON.parse(post.content);
+                  const wordCount = blocks
+                    .filter((block: any) => block.type === 'text')
+                    .reduce((count: number, block: any) => {
+                      return count + (block.content.match(/\b\w+\b/g)?.length || 0);
+                    }, 0);
+                  return total + wordCount;
+                } catch (e) {
+                  return total;
+                }
+              }, 0).toLocaleString('de-DE')}
+            </div>
+            <div class="text-[#6c7086] text-sm font-mono">Words Written</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Timeline -->
+      <div class="relative">
+        <!-- Vertical Line with Gradient -->
+        <div class="absolute left-1/2 transform -translate-x-px h-full w-0.5 bg-gradient-to-b from-[#cba6f7] via-[#89b4fa] to-[#f5c2e7]"></div>
+
+        {sortedGroups.map((group: any, index: number) => (
+          <div class="mb-20 relative">
+            <!-- Date Label -->
+            <div class="flex justify-center mb-12">
+              <div class="bg-[#181825] text-[#cdd6f4] px-6 py-3 rounded-full border border-[#313244] font-mono relative z-10 shadow-lg hover:border-[#45475a] transition-all duration-300">
+                {formatDate(group.date)}
+              </div>
+            </div>
+
+            <!-- Posts Grid -->
+            <div class="grid gap-8 lg:grid-cols-2 relative z-10">
+              {group.posts.map((post: any) => (
+                <a 
+                  href={`/posts/${post.id}`}
+                  class="group"
+                >
+                  <article class="bg-[#181825] rounded-lg p-6 border border-[#313244] transition-all duration-300 hover:border-[#45475a] hover:shadow-lg hover:shadow-[#89b4fa]/5 relative overflow-hidden">
+                    <!-- Decorative Elements -->
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#89b4fa]/10 to-transparent transform rotate-45 translate-x-16 -translate-y-16"></div>
+                    
+                    <div class="relative">
+                      <div class="flex items-center text-sm text-[#6c7086] font-mono mb-3">
+                        <span class="text-[#cba6f7]">class</span>
+                        <span class="text-[#89b4fa] ml-2">Post</span>
+                        <span class="text-[#6c7086] ml-2">{`{`}</span>
+                      </div>
+
+                      <h2 class="text-xl font-bold text-[#cdd6f4] mb-4 group-hover:text-[#89b4fa] transition-colors duration-200 font-mono">
+                        {post.title}
+                      </h2>
+
+                      <p class="text-[#6c7086] mb-4 line-clamp-2 font-mono text-sm">
+                        {getExcerpt(post.content)}
+                      </p>
+
+                      <div class="flex items-center text-sm text-[#6c7086] gap-4 font-mono">
+                        <span>
+                          <span class="text-[#f5c2e7]">@author</span>
+                          <span class="text-[#cdd6f4] ml-2">{post.author?.name || 'Anonymous'}</span>
+                        </span>
+                        <span>
+                          <span class="text-[#cba6f7]">@date</span>
+                          <span class="text-[#cdd6f4] ml-2">
+                            {new Date(post.createdAt).toLocaleDateString()}
+                          </span>
+                        </span>
+                      </div>
+
+                      {post.archived && (
+                        <span class="inline-block mt-3 text-[#fab387] text-sm font-mono">@archived</span>
+                      )}
+
+                      <div class="text-[#6c7086] mt-4 font-mono text-sm text-right">
+                        {`}`}
+                      </div>
+                    </div>
+                  </article>
+                </a>
+              ))}
+            </div>
+
+            <!-- Circle on Line with Pulse -->
+            <div class="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 top-0">
+              <div class="w-4 h-4 rounded-full bg-[#89b4fa] border-4 border-[#1e1e2e] relative">
+                <div class="absolute inset-0 rounded-full bg-[#89b4fa] animate-ping opacity-75"></div>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        <!-- End Cap with Glow -->
+        <div class="absolute left-1/2 transform -translate-x-1/2 bottom-0">
+          <div class="w-6 h-6 rounded-full bg-[#cba6f7] border-4 border-[#1e1e2e] relative">
+            <div class="absolute inset-0 rounded-full bg-[#cba6f7] animate-pulse opacity-75"></div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="text-center mt-20 text-[#6c7086] font-mono">
+        <div class="text-2xl mb-8">
+          <span class="text-[#f5c2e7]">{`}`}</span>
+          <span class="text-[#6c7086]">;</span>
+        </div>
+        <div class="inline-block bg-[#181825]/50 backdrop-blur-sm rounded-full px-4 py-2 border border-[#313244] shadow-lg">
+          <p class="text-sm font-mono text-[#6c7086]">
+            Built with 
+            <span class="text-[#f5c2e7] animate-pulse inline-block transform hover:scale-110 transition-transform duration-200">♥</span> 
+            using 
+            <a href="https://astro.build" target="_blank" rel="noopener noreferrer" class="text-[#89b4fa] hover:text-[#b4befe] transition-colors duration-200">Astro</a>
+          </p>
+        </div>
+      </footer>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

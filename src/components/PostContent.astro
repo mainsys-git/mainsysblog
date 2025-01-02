@@ -1,0 +1,89 @@
+---
+interface Props {
+  content: string;
+  isExcerpt?: boolean;
+  currentUser?: { name: string } | null;
+}
+
+const { content, isExcerpt = false, currentUser } = Astro.props;
+const userName = currentUser?.name || 'Guest';
+
+let contentBlocks = [];
+try {
+  contentBlocks = JSON.parse(content);
+  if (!Array.isArray(contentBlocks)) {
+    contentBlocks = [{ type: 'text', content: content }];
+  }
+  
+  // Replace greeting blocks with current user's name
+  contentBlocks = contentBlocks.map(block => {
+    if (block.type === 'greeting') {
+      return {
+        type: 'text',
+        content: `${block.content}, ${userName}`
+      };
+    }
+    return block;
+  });
+} catch (error) {
+  console.error('Error parsing content:', error);
+  contentBlocks = [{ type: 'text', content: content }];
+}
+
+// For excerpts, only show the first text block and limit its length
+if (isExcerpt) {
+  const firstTextBlock = contentBlocks.find(block => block.type === 'text');
+  if (firstTextBlock) {
+    const excerpt = firstTextBlock.content.split('\n')[0]; // Get first paragraph
+    contentBlocks = [{ type: 'text', content: excerpt.length > 150 ? excerpt.slice(0, 150) + '...' : excerpt }];
+  } else {
+    contentBlocks = [];
+  }
+}
+---
+
+<div class="prose prose-lg max-w-none space-y-6">
+  {contentBlocks.map((block: any) => {
+    if (!block || !block.type) return null;
+    
+    switch (block.type) {
+      case 'text':
+        return block.content ? (
+          <p class="text-[#cdd6f4] leading-relaxed whitespace-pre-wrap text-lg">
+            {block.content}
+          </p>
+        ) : null;
+      
+      case 'image':
+        return !isExcerpt && block.url ? (
+          <div class="my-6">
+            <img
+              src={block.url}
+              alt={block.alt || ''}
+              class="rounded-lg shadow-md max-w-full mx-auto border border-[#313244]"
+            />
+            {block.alt && (
+              <p class="mt-3 text-center text-sm text-[#6c7086]">{block.alt}</p>
+            )}
+          </div>
+        ) : null;
+      
+      case 'link':
+        return !isExcerpt && block.url ? (
+          <p class="my-4">
+            <a
+              href={block.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-[#89b4fa] hover:underline"
+            >
+              {block.text || block.url}
+            </a>
+          </p>
+        ) : null;
+      
+      default:
+        return null;
+    }
+  })}
+</div>

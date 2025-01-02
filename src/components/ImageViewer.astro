@@ -1,0 +1,97 @@
+---
+interface Props {
+  src: string;
+  alt: string;
+}
+
+const { src, alt } = Astro.props;
+
+// Debugging
+console.log('ImageViewer props:', { src, alt });
+---
+
+<div class="image-container group">
+  <img 
+    src={src} 
+    alt={alt} 
+    class="cursor-zoom-in transition-all duration-300 hover:opacity-95 w-full h-auto rounded-lg"
+    onclick="openImageViewer(this.src, this.alt)"
+  />
+</div>
+
+<div id="imageViewer" class="fixed inset-0 bg-black/90 z-50 hidden items-center justify-center cursor-zoom-out" onclick="closeImageViewer()">
+  <div class="relative max-w-[90vw] max-h-[90vh]">
+    <img id="viewerImage" src="" alt="" class="max-w-full max-h-[90vh] object-contain rounded-lg" />
+    <button 
+      onclick="closeImageViewer()" 
+      class="absolute -top-4 -right-4 w-8 h-8 bg-[#11111b] text-[#cdd6f4] rounded-full flex items-center justify-center hover:bg-[#1e1e2e] transition-colors"
+    >
+      ×
+    </button>
+  </div>
+</div>
+
+<script>
+  let currentSrc = '';
+
+  function openImageViewer(src: string, alt: string) {
+    const viewer = document.getElementById('imageViewer');
+    const image = document.getElementById('viewerImage') as HTMLImageElement;
+    
+    if (viewer && image) {
+      currentSrc = src;
+      image.src = src;
+      image.alt = alt;
+      
+      viewer.style.display = 'flex';
+      viewer.style.opacity = '0';
+      requestAnimationFrame(() => {
+        viewer.style.transition = 'opacity 300ms ease-out';
+        viewer.style.opacity = '1';
+      });
+
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  function closeImageViewer() {
+    const viewer = document.getElementById('imageViewer');
+    
+    if (viewer) {
+      viewer.style.opacity = '0';
+      setTimeout(() => {
+        viewer.style.display = 'none';
+        document.body.style.overflow = '';
+      }, 300);
+    }
+  }
+
+  // Schließe mit Escape-Taste
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeImageViewer();
+    }
+  });
+
+  // Vermeide Bubbling beim Klick auf das Bild
+  document.getElementById('viewerImage')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+</script>
+
+<style>
+  .image-container img {
+    width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+  }
+
+  #imageViewer {
+    backdrop-filter: blur(8px);
+  }
+
+  #viewerImage {
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.2);
+    border-radius: 0.5rem;
+  }
+</style>
