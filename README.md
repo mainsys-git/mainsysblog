@@ -25,8 +25,8 @@ Ein moderner Blog mit Code-inspiriertem Design, gebaut mit Astro und Tailwind CS
 
 1. Repository klonen:
 ```bash
-git clone [repository-url]
-cd astro-blog
+git clone https://github.com/mainsys-git/mainsysblog.git
+cd mainsysblog
 ```
 
 2. Abhängigkeiten installieren:
@@ -34,71 +34,83 @@ cd astro-blog
 npm install
 ```
 
-3. SQLite-Datenbank initialisieren:
+3. Umgebungsvariablen einrichten:
+   - Kopiere `.env.example` zu `.env`
+   - Passe die Werte in `.env` an
+
+4. Datenbank initialisieren:
 ```bash
 npm run db:init
 ```
 
-4. Entwicklungsserver starten:
+5. Entwicklungsserver starten:
 ```bash
 npm run dev
 ```
 
-5. Für Produktionsaufbau:
+Der Blog ist jetzt unter `http://localhost:3000` erreichbar!
+
+## 🤝 Beitragen
+
+Wir freuen uns über Beiträge! So kannst du mitmachen:
+
+### 1. Entwicklungsumgebung einrichten
+
 ```bash
-npm run build
+# Repository forken und klonen
+git clone https://github.com/[dein-username]/mainsysblog.git
+cd mainsysblog
+
+# Abhängigkeiten installieren
+npm install
+
+# Entwicklungsserver starten
+npm run dev
 ```
 
-## 🗄️ Umgebungsvariablen
+### 2. Änderungen vornehmen
 
-Erstelle eine `.env`-Datei im Hauptverzeichnis:
-
-```env
-DATABASE_URL="db/blog.db"
-JWT_SECRET="dein-geheimer-schlüssel"
-ADMIN_USERNAME="admin"
-ADMIN_PASSWORD="sicheres-passwort"
+1. Erstelle einen Feature-Branch:
+```bash
+git checkout -b feature/deine-feature-beschreibung
 ```
 
-## 📁 Projektstruktur
+2. Entwickle dein Feature:
+   - Halte dich an den existierenden Code-Stil
+   - Füge Kommentare für komplexe Logik hinzu
+   - Teste deine Änderungen gründlich
 
-```
-/
-├── db/                 # SQLite Datenbank
-├── public/            # Statische Assets
-├── src/
-│   ├── components/    # UI Komponenten
-│   ├── layouts/       # Seitenlayouts
-│   ├── lib/          # Hilfsfunktionen
-│   ├── pages/        # Seitenrouten
-│   └── styles/       # Globale Styles
-└── uploads/          # Hochgeladene Bilder
+3. Committe deine Änderungen:
+```bash
+git add .
+git commit -m "feat: Beschreibung deiner Änderungen"
 ```
 
-## 💻 Entwicklung
+### 3. Pull Request erstellen
 
-### Neue Posts erstellen
+1. Pushe zu deinem Fork:
+```bash
+git push origin feature/deine-feature-beschreibung
+```
 
-1. Im Admin-Bereich einloggen (`/admin`)
-2. "Neuer Post" auswählen
-3. Markdown-Editor nutzen für:
-   - Text mit Markdown-Syntax
-   - Code-Blöcke mit Syntax-Hervorhebung
-   - Bilder via Drag & Drop
+2. Erstelle einen Pull Request:
+   - Gehe zu GitHub
+   - Klicke auf "Pull Request"
+   - Beschreibe deine Änderungen detailliert
+   - Verlinke relevante Issues
 
-### Datenbank-Schema
+### 4. Code-Richtlinien
 
-Die SQLite-Datenbank enthält folgende Tabellen:
+- Nutze TypeScript für neue Funktionen
+- Folge dem existierenden Code-Stil
+- Schreibe aussagekräftige Commit-Messages
+- Dokumentiere neue Funktionen
+- Teste deine Änderungen
 
-- `posts`: Blog-Posts
-- `users`: Benutzerkonten
-- `sessions`: Aktive Sitzungen
+## ⚠️ Bekannte Probleme
 
-### API-Endpunkte
-
-- `POST /api/auth/login`: Benutzeranmeldung
-- `POST /api/upload/image`: Bildupload
-- `GET/POST /api/posts`: Posts verwalten
+- SQLite unterstützt keine gleichzeitigen Schreibzugriffe
+- Große Bilder sollten vor dem Upload komprimiert werden
 
 ## 🔒 Sicherheit
 
@@ -110,20 +122,7 @@ Die SQLite-Datenbank enthält folgende Tabellen:
 
 ## 📝 Lizenz
 
-MIT
-
-## 🤝 Beitragen
-
-1. Fork erstellen
-2. Feature Branch erstellen (`git checkout -b feature/AmazingFeature`)
-3. Änderungen committen (`git commit -m 'Add some AmazingFeature'`)
-4. Branch pushen (`git push origin feature/AmazingFeature`)
-5. Pull Request erstellen
-
-## ⚠️ Bekannte Probleme
-
-- SQLite unterstützt keine gleichzeitigen Schreibzugriffe
-- Große Bilder sollten vor dem Upload komprimiert werden
+[MIT](LICENSE)
 
 ## 🙏 Danksagung
 
