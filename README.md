@@ -36,7 +36,14 @@ npm install
 
 3. Umgebungsvariablen einrichten:
    - Kopiere `.env.example` zu `.env`
-   - Passe die Werte in `.env` an
+   - Passe die Werte in `.env` an:
+     ```env
+     # Authentication
+     JWT_SECRET="dein-geheimer-schlüssel"  # Wichtig für die Sicherheit!
+     
+     # Server Configuration
+     BASE_URL="http://localhost:4321"      # URL deiner Anwendung
+     ```
 
 4. Datenbank initialisieren:
 ```bash
