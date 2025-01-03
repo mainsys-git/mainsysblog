@@ -18,6 +18,8 @@ db/*.db
 db/*.db-journal
 *.sqlite
 *.sqlite-journal
+prisma/*.db
+prisma/*.db-journal
 
 # Logs
 logs

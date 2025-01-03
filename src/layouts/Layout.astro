@@ -43,7 +43,7 @@ if (token) {
     <meta charset="UTF-8" />
     <meta name="description" content="A modern blog about coding and technology" />
     <meta name="viewport" content="width=device-width" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/mainsyslogo.png" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,7 +56,13 @@ if (token) {
       <div class="max-w-[95%] mx-auto">
         <div class="grid grid-cols-3 items-center">
           <!-- Left: Blog Title -->
-          <div class="flex-shrink-0 ml-4">
+          <div class="flex-shrink-0 ml-4 flex items-center gap-3">
+            <img 
+              src="/mainsyslogo.png" 
+              alt="Mainsys Logo" 
+              class="h-10 w-10 select-none pointer-events-none" 
+              draggable="false"
+            />
             <a href="/" class="text-xl font-bold">
               <span class="text-[#89b4fa]">{</span>
               <span class="text-[#a6e3a1]">Mainsys Blog</span>

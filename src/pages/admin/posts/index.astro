@@ -8,10 +8,18 @@ const user = await requireAdmin(Astro);
 if (user instanceof Response) return user;
 
 const prisma = new PrismaClient();
-const posts = await prisma.post.findMany({
-  orderBy: { createdAt: 'desc' },
+const allPosts = await prisma.post.findMany({
+  orderBy: [
+    { archived: 'asc' },
+    { createdAt: 'desc' }
+  ],
   include: { author: { select: { name: true } } },
 });
+
+// Separate posts into active and archived
+const activePosts = allPosts.filter(post => !post.archived);
+const archivedPosts = allPosts.filter(post => post.archived);
+
 await prisma.$disconnect();
 ---
 
@@ -35,80 +43,158 @@ await prisma.$disconnect();
       </a>
     </div>
 
-    <div class="bg-[#181825] rounded-lg border border-[#313244] mt-6">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-[#313244]">
-          <thead class="bg-[#11111b]">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase">Title</th>
-              <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase">Author</th>
-              <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase">Status</th>
-              <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-[#313244]" id="postsTable">
-            {posts.map((post) => (
-              <tr class="hover:bg-[#11111b] transition-colors">
-                <td class="px-6 py-4 font-mono">
-                  <span class="text-[#89b4fa]">{post.title}</span>
-                </td>
-                <td class="px-6 py-4 font-mono">
-                  <span class="text-[#a6e3a1]">{post.author.name}</span>
-                </td>
-                <td class="px-6 py-4 font-mono">
-                  <div class="flex items-center space-x-2">
+    <!-- Active Posts -->
+    <div class="mt-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-mono text-[#cdd6f4]">Active Posts</h2>
+      </div>
+      <div class="bg-[#181825] rounded-lg border border-[#313244]">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-[#313244]">
+            <thead class="bg-[#11111b]">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase w-[35%]">Title</th>
+                <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase w-[15%]">Author</th>
+                <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase w-[20%]">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase w-[30%]">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#313244]" id="activePostsTable">
+              {activePosts.map((post) => (
+                <tr class="hover:bg-[#11111b] transition-colors">
+                  <td class="px-6 py-4 font-mono">
+                    <span class="text-[#89b4fa]">{post.title}</span>
+                  </td>
+                  <td class="px-6 py-4 font-mono">
+                    <span class="text-[#a6e3a1]">{post.author.name}</span>
+                  </td>
+                  <td class="px-6 py-4 font-mono whitespace-nowrap">
                     <span class={`text-${post.published ? '[#a6e3a1]' : '[#f9e2af]'}`}>
                       {post.published ? 'Published' : 'Draft'}
                     </span>
-                    {post.archived && (
-                      <span class="text-[#f38ba8]">• Archived</span>
-                    )}
-                  </div>
-                </td>
-                <td class="px-6 py-4 font-mono">
-                  <div class="flex items-center gap-2">
-                    <button
-                      type="button"
-                      data-action="publish"
-                      data-post-id={post.id}
-                      data-published={post.published.toString()}
-                      class="bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-3 py-1.5 rounded transition-colors"
-                    >
-                      {post.published ? 'unpublish()' : 'publish()'}
-                    </button>
-                    <button
-                      type="button"
-                      data-action="archive"
-                      data-post-id={post.id}
-                      data-archived={post.archived.toString()}
-                      class="bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-3 py-1.5 rounded transition-colors"
-                    >
-                      {post.archived ? 'unarchive()' : 'archive()'}
-                    </button>
-                    <a
-                      href={`/admin/posts/edit/${post.id}`}
-                      class="bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-3 py-1.5 rounded transition-colors"
-                    >
-                      edit()
-                    </a>
-                    <button
-                      type="button"
-                      data-action="delete"
-                      data-post-id={post.id}
-                      class="bg-[#181825] border border-[#f38ba8] text-[#f38ba8] hover:bg-[#f38ba8] hover:text-[#11111b] px-3 py-1.5 rounded transition-all"
-                    >
-                      delete()
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </td>
+                  <td class="px-6 py-4 font-mono">
+                    <div class="flex items-center gap-3 min-w-[400px]">
+                      <button
+                        type="button"
+                        data-action="publish"
+                        data-post-id={post.id}
+                        data-published={post.published.toString()}
+                        class="bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-4 py-2 rounded transition-colors min-w-[100px] text-center"
+                      >
+                        {post.published ? 'unpublish()' : 'publish()'}
+                      </button>
+                      <button
+                        type="button"
+                        data-action="archive"
+                        data-post-id={post.id}
+                        data-archived={post.archived.toString()}
+                        class="bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-4 py-2 rounded transition-colors min-w-[90px] text-center"
+                      >
+                        archive()
+                      </button>
+                      <a
+                        href={`/admin/posts/edit/${post.id}`}
+                        class="bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-4 py-2 rounded transition-colors min-w-[70px] text-center"
+                      >
+                        edit()
+                      </a>
+                      <button
+                        type="button"
+                        data-action="delete"
+                        data-post-id={post.id}
+                        class="bg-[#181825] border border-[#f38ba8] text-[#f38ba8] hover:bg-[#f38ba8] hover:text-[#11111b] px-4 py-2 rounded transition-all min-w-[80px] text-center"
+                      >
+                        delete()
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <div class="font-mono text-[#6c7086] mt-8">}</div>
+    <!-- Archived Posts -->
+    {archivedPosts.length > 0 && (
+      <div class="mt-12">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-mono text-[#cdd6f4]">Archived Posts</h2>
+        </div>
+        <div class="bg-[#181825] rounded-lg border border-[#313244]">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-[#313244]">
+              <thead class="bg-[#11111b]">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase w-[35%]">Title</th>
+                  <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase w-[15%]">Author</th>
+                  <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase w-[20%]">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-mono text-[#6c7086] uppercase w-[30%]">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#313244]" id="archivedPostsTable">
+                {archivedPosts.map((post) => (
+                  <tr class="hover:bg-[#11111b] transition-colors">
+                    <td class="px-6 py-4 font-mono">
+                      <span class="text-[#89b4fa]">{post.title}</span>
+                    </td>
+                    <td class="px-6 py-4 font-mono">
+                      <span class="text-[#a6e3a1]">{post.author.name}</span>
+                    </td>
+                    <td class="px-6 py-4 font-mono whitespace-nowrap">
+                      <div class="flex items-center space-x-2">
+                        <span class={`text-${post.published ? '[#a6e3a1]' : '[#f9e2af]'}`}>
+                          {post.published ? 'Published' : 'Draft'}
+                        </span>
+                        <span class="text-[#f38ba8]">• Archived</span>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 font-mono">
+                      <div class="flex items-center gap-3 min-w-[400px]">
+                        <button
+                          type="button"
+                          data-action="publish"
+                          data-post-id={post.id}
+                          data-published={post.published.toString()}
+                          class="bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-4 py-2 rounded transition-colors min-w-[100px] text-center"
+                        >
+                          {post.published ? 'unpublish()' : 'publish()'}
+                        </button>
+                        <button
+                          type="button"
+                          data-action="archive"
+                          data-post-id={post.id}
+                          data-archived={post.archived.toString()}
+                          class="bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-4 py-2 rounded transition-colors min-w-[90px] text-center"
+                        >
+                          unarchive()
+                        </button>
+                        <a
+                          href={`/admin/posts/edit/${post.id}`}
+                          class="bg-[#181825] border border-[#313244] hover:border-[#89b4fa] px-4 py-2 rounded transition-colors min-w-[70px] text-center"
+                        >
+                          edit()
+                        </a>
+                        <button
+                          type="button"
+                          data-action="delete"
+                          data-post-id={post.id}
+                          class="bg-[#181825] border border-[#f38ba8] text-[#f38ba8] hover:bg-[#f38ba8] hover:text-[#11111b] px-4 py-2 rounded transition-all min-w-[80px] text-center"
+                        >
+                          delete()
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )}
   </div>
 </Layout>
 
@@ -159,7 +245,7 @@ await prisma.$disconnect();
 
         // Create request body with the action as the key
         const requestBody = {
-          [action]: !currentState
+          [action === 'publish' ? 'publish' : 'archive']: !currentState
         };
         
         console.log('Request body:', requestBody);

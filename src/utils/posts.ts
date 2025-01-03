@@ -29,9 +29,14 @@ export async function getPost(id: string) {
 export async function getPosts() {
   try {
     const posts = await prisma.post.findMany({
-      orderBy: {
-        createdAt: 'desc'
-      },
+      orderBy: [
+        {
+          archived: 'asc'
+        },
+        {
+          createdAt: 'desc'
+        }
+      ],
       include: {
         author: {
           select: {

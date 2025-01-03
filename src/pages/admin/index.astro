@@ -73,6 +73,14 @@ try {
                 <span class="text-[#a6e3a1]">{posts.length}</span>
               </p>
               <p>
+                <span class="text-[#6c7086]">activePosts:</span>
+                <span class="text-[#a6e3a1]">{posts.filter(p => !p.archived).length}</span>
+              </p>
+              <p>
+                <span class="text-[#6c7086]">archivedPosts:</span>
+                <span class="text-[#f38ba8]">{posts.filter(p => p.archived).length}</span>
+              </p>
+              <p>
                 <span class="text-[#6c7086]">publishedPosts:</span>
                 <span class="text-[#a6e3a1]">{posts.filter(p => p.published).length}</span>
               </p>

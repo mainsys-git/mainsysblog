@@ -100,3 +100,22 @@ export async function requireAdminApi(request: Request) {
     });
   }
 }
+
+export async function verifyAdmin(cookies: any) {
+  const token = cookies.get('token')?.value;
+  
+  if (!token) {
+    return false;
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+    });
+
+    return user?.role === 'ADMIN';
+  } catch (error) {
+    return false;
+  }
+}
