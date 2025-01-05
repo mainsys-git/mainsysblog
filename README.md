@@ -65,8 +65,8 @@ Wir freuen uns über Beiträge! So kannst du mitmachen:
 
 ```bash
 # Repository forken und klonen
-git clone https://github.com/[dein-username]/astro-blog.git
-cd astro-blog
+git clone https://github.com/[dein-username]/mainsysblog.git
+cd mainsysblog
 
 # Abhängigkeiten installieren
 npm install
